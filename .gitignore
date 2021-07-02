@@ -1,5 +1,7 @@
 # Passwords, Tokens etc.
 config.py
+input.csv
+database.csv
 
 ### ---------------------------------------------------------------------------------------------------------------- ###
 # Created by https://www.toptal.com/developers/gitignore/api/pycharm+all,python,images
