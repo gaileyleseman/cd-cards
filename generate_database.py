@@ -5,6 +5,7 @@ import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 import re
 import requests
+import qrcode
 import config as cfg
 
 df = pd.read_csv("./input.csv")
@@ -33,13 +34,27 @@ def get_spotify_context(artist, album, spotify):
         artist = album = album_uri = cover_url = None  # store as None for filtering
     return [artist, album, album_uri, cover_url]
 
+def generate_qr(data):
+    qr = qrcode.QRCode(
+        version=1,
+        box_size=10,
+        border=1)
+    qr.add_data(data)
+    qr.make(fit=True)
+    img = qr.make_image(fill='black', back_color='white')
+    return img
+
 def save_images(filename, cover_url):
-    covers = "./images/covers/" + filename + ".png"
-    qr_path = "./images/qr"
-    if not os.path.isfile(covers):
+    covers_path = "./images/covers/" + filename + ".png"
+    qr_path = "./images/qr/" + filename + "--qr.png"
+    if not os.path.isfile(covers_path):
         img = requests.get(cover_url)
-        with open(covers, "wb") as cover:
+        with open(covers_path, "wb") as cover:
             cover.write(img.content)
+    if not os.path.isfile(qr_path):
+        qr = generate_qr(filename)
+        qr.save(qr_path)
+
 
 
 df[["artist", "album", "album_uri", "cover_url"]] = \
