@@ -6,11 +6,10 @@ from spotipy.oauth2 import SpotifyOAuth
 import re
 import requests
 import qrcode
+from PIL import Image
+from scripts.spotify_background_color import SpotifyBackgroundColor
 import config as cfg
 
-df = pd.read_csv("./input.csv")
-# TODO: lower caps
-# TODO: remove trailing spaces
 
 CLIENT_ID = cfg.spotify["CLIENT_ID"]
 CLIENT_SECRET = cfg.spotify["CLIENT_SECRET"]
@@ -20,6 +19,10 @@ spotify = spotipy.Spotify(
     client_credentials_manager=SpotifyOAuth(client_id=CLIENT_ID, client_secret=CLIENT_SECRET, scope=scope,
                                             redirect_uri="http://google.com/"))
 
+
+df = pd.read_csv("./input.csv")
+# TODO: lower caps
+# TODO: remove trailing spaces
 
 def get_spotify_context(artist, album, spotify):
     query = "artist:" + artist + ", album:" + album
@@ -34,6 +37,7 @@ def get_spotify_context(artist, album, spotify):
         artist = album = album_uri = cover_url = None  # store as None for filtering
     return [artist, album, album_uri, cover_url]
 
+
 def generate_qr(data):
     qr = qrcode.QRCode(
         version=1,
@@ -41,8 +45,8 @@ def generate_qr(data):
         border=1)
     qr.add_data(data)
     qr.make(fit=True)
-    img = qr.make_image(fill='black', back_color='white')
-    return img
+    return qr.make_image(fill='black', back_color='white')
+
 
 def save_images(filename, cover_url):
     covers_path = "./images/covers/" + filename + ".png"
@@ -55,6 +59,12 @@ def save_images(filename, cover_url):
         qr = generate_qr(filename)
         qr.save(qr_path)
 
+def get_background_color(filename):
+    cover = np.array(Image.open("./images/covers/" + filename + ".png"))
+    bgc = SpotifyBackgroundColor(img=cover)
+    color = bgc.best_color(8)
+    color = [int(i) for i in color]
+    return color
 
 
 df[["artist", "album", "album_uri", "cover_url"]] = \
@@ -64,3 +74,7 @@ df = df.dropna()
 df["filename"] = df.apply(lambda x: (x["artist"] + "-" + x["album"]).replace(" ", "_").lower(), axis=1)
 
 df.apply(lambda x: save_images(x["filename"], x["cover_url"]), axis=1)
+
+
+# TODO on a row by row basis
+df["color"] = df.apply(lambda x: get_background_color(x["filename"]), axis=1)
