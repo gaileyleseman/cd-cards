@@ -1,7 +1,6 @@
 import numpy as np
 import os
 
-import pandas
 import pandas as pd
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
@@ -83,8 +82,7 @@ if __name__ == '__main__':
         df.apply(lambda x: get_spotify_context(x["q_artist"], x["q_album"], spotify), axis=1, result_type='expand')
 
     # save failed searches for manual correction
-    df_failed = df[df.isna().any(axis=1)]
-    df_failed.drop(spotify_cols, axis=1)
+    df_failed = df[df.isna().any(axis=1)].drop(spotify_cols, axis=1)
     df_failed.to_csv("failed_input.csv")
     df = df.dropna()
 
@@ -98,11 +96,12 @@ if __name__ == '__main__':
     # save dataframe and optionally add previously saved data
     stored_df_path = "./data.pkl"
     try:
-        stored_df = pandas.read_pickle(stored_df_path)
-        df = pandas.concat([df, stored_df], axis=0)
+        stored_df = pd.read_pickle(stored_df_path)
+        df = pd.concat([df, stored_df], axis=0)
     except FileNotFoundError:
         pass
     df.drop_duplicates(subset=['reference'], inplace=True)
     df.to_pickle(stored_df_path)
+    df.to_csv("./data.csv")
 
 
