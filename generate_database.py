@@ -1,5 +1,7 @@
 import numpy as np
 import os
+
+import pandas
 import pandas as pd
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
@@ -24,7 +26,7 @@ def get_spotify_context(artist, album, spotify):
     try:
         result = results["albums"]["items"][0]
         artist = result['artists'][0]['name']  # get official artist name
-        album = re.sub(" [\(\[].*?[\)\]]", "", result["name"])  # official album name, remove info between brackets
+        album = re.sub(' [(\[].*?[)\]]', "", result["name"])  # official album name, remove info between brackets
         album_uri = result['uri']
         cover_url = result['images'][0]['url']
     except IndexError:
@@ -58,7 +60,7 @@ def save_images(reference, cover_url):
 def get_background_color(reference):
     background_path = "./images/background/" + reference + ".png"
     if not os.path.isfile(background_path):
-        print("Determining background color for " + reference)
+        print("Determining background color for " + reference + "...")
         cover = np.array(Image.open("./images/covers/" + reference + ".png"))
         bgc = SpotifyBackgroundColor(img=cover)
         color = bgc.best_color(8)
@@ -93,7 +95,14 @@ if __name__ == '__main__':
     # determine background color
     df["color"] = df.apply(lambda x: get_background_color(x["reference"]), axis=1)
 
-    # save dataframe
-    df.to_pickle("./data.pkl")
+    # save dataframe and optionally add previously saved data
+    stored_df_path = "./data.pkl"
+    try:
+        stored_df = pandas.read_pickle(stored_df_path)
+        df = pandas.concat([df, stored_df], axis=0)
+    except FileNotFoundError:
+        pass
+    df.drop_duplicates(subset=['reference'], inplace=True)
+    df.to_pickle(stored_df_path)
 
 
