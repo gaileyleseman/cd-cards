@@ -120,7 +120,7 @@ class SpotifyBackgroundColor():
             plt.plot()
             plt.show(block=False)
 
-        return best_color[0], best_color[1], best_color[2]
+        return int(best_color[0]), int(best_color[1]), int(best_color[2])
 
     def find_histogram(self, clt):
         """Create a histogram of image.
