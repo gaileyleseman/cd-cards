@@ -1,3 +1,5 @@
+import pprint
+
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 import pandas as pd
@@ -13,14 +15,16 @@ CLIENT_SECRET = cfg.spotify["CLIENT_SECRET"]
 SPEAKER_NAME = cfg.spotify["SPEAKER_NAME"]
 url = cfg.homeassistant["url"]
 TOKEN = cfg.homeassistant["TOKEN"]
-entity = cfg.homeassistant["entity"]
-
+lights = cfg.homeassistant["lights"]
+lights_flag = cfg.homeassistant["lights-flag"]
 # set up services
 scope = "user-read-playback-state,user-modify-playback-state"
 spotify = spotipy.Spotify(
     client_credentials_manager=SpotifyOAuth(client_id=CLIENT_ID, client_secret=CLIENT_SECRET, scope=scope,
                                             redirect_uri="http://google.com/"))
-homeassistant = Client(url, TOKEN).get_services()
+homeassistant = Client(url, TOKEN)
+light = homeassistant.get_domains().light
+
 
 # import data
 df = pd.read_pickle("./data.pkl")
@@ -48,26 +52,31 @@ def play_album(uri):
     print("Now playing: " + album_ref)
     spotify.volume(4)
 
+def get_flag():
+    flag = homeassistant.get_state(lights_flag)["state"]
+    return flag == 'on'
 
 def change_lights(color, transition=2, brightness=255):
-    homeassistant.light.services.turn_on.trigger(entity_id=entity,
-                                                 transition=str(transition),
-                                                 brightness=str(brightness),
-                                                 rgb_color=color)
+    light.services.turn_on.trigger(entity_id=lights,
+                                     transition=str(transition),
+                                     brightness=str(brightness),
+                                     rgb_color=color)
 
 
 if __name__ == '__main__':
     while True:
         q = input("Enter 'q' to start QR Scanner: ")
-
         if q == "q":
             print("starting qr-reader")
             album_ref = read_qr()
-
             uri = data[album_ref]["album_uri"]
             color = data[album_ref]["color"]
 
             play_album(uri)  # play on album on speakers
-            change_lights(color)  # change hue lights to album color
+            if get_flag():
+                change_lights(color)  # change hue lights to album color
         else:
             break
+
+
+
